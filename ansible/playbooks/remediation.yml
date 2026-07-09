@@ -17,7 +17,7 @@
         msg: "Container {{ target }} restart state: {{ docker_restart.changed }}"
 
 - name: Container-Internal Remediation Playbook
-  hosts: "{{ target }}"
+  hosts: "{{ target | default('containers') }}"
   gather_facts: no
   tasks:
     - name: Check disk usage inside container
