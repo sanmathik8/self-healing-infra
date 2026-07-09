@@ -1,0 +1,65 @@
+name: SRE Self-Healing CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install ansible-core flake8
+
+    - name: Lint with flake8
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Run unit tests
+      run: |
+        python -m pytest tests/ -v
+
+    - name: Validate Docker Compose Configuration
+      run: |
+        docker compose config
+
+    - name: Install Ansible collection for Docker
+      run: |
+        ansible-galaxy collection install community.docker
+
+    - name: Validate Ansible Playbook Syntax
+      run: |
+        ansible-playbook --syntax-check -i ansible/inventory.ini ansible/playbooks/remediation.yml
+
+    - name: Run Local Health Check Simulation
+      run: |
+        # Create reports directory
+        mkdir -p reports
+        # Run health check. It will detect that docker socket and containers are missing and output a report
+        python3 scripts/health_engine.py --report-dir reports
+      continue-on-error: true
+
+    - name: Upload SRE Health Reports as Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: sre-health-reports
+        path: reports/
+        if-no-files-found: warn

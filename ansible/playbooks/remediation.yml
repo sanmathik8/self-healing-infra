@@ -1,0 +1,43 @@
+---
+- name: Container-Level Remediation Playbook
+  hosts: local
+  gather_facts: no
+  tasks:
+    - name: Restart container via Docker socket
+      when: action == 'restart'
+      community.docker.docker_container:
+        name: "{{ target }}"
+        state: started
+        restart: yes
+      register: docker_restart
+
+    - name: Print restart details
+      when: action == 'restart'
+      ansible.builtin.debug:
+        msg: "Container {{ target }} restart state: {{ docker_restart.changed }}"
+
+- name: Container-Internal Remediation Playbook
+  hosts: "{{ target }}"
+  gather_facts: no
+  tasks:
+    - name: Check disk usage inside container
+      when: action == 'clear_logs'
+      ansible.builtin.command: df -h
+      register: disk_info
+
+    - name: Show disk info before cleanup
+      when: action == 'clear_logs'
+      ansible.builtin.debug:
+        var: disk_info.stdout_lines
+
+    - name: Clear temp space and truncate log files
+      when: action == 'clear_logs'
+      ansible.builtin.shell: |
+        find /var/log -type f -name "*.log" -exec truncate -s 0 {} \;
+        rm -rf /tmp/*
+      failed_when: false
+
+    - name: Restore configuration file
+      when: action == 'restore_config'
+      ansible.builtin.debug:
+        msg: "Restoring configuration for service {{ target }}"
