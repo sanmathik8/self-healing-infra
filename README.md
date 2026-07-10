@@ -1,6 +1,6 @@
 # 🔧 SRE Self-Healing Infrastructure
 
-An interview-ready **SRE/DevOps portfolio project** demonstrating automated infrastructure health monitoring, containerized service checking, Ansible-driven auto-remediation, and compliance reporting.
+An  **DevOps project** demonstrating automated infrastructure health monitoring, containerized service checking, Ansible-driven auto-remediation, and compliance reporting.
 
 This project implements a container-native **watchbot** that monitors a local microservice stack, detects failures, runs targeted Ansible playbooks to recover stopped or degraded services, and generates JSON + HTML compliance dashboards.
 
